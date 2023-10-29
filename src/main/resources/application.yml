@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: otlp-demo
+
+management:
+  otlp:
+    tracing:
+      endpoint: "http://localhost:4318/v1/traces"
+    metrics:
+      export:
+        url: "http://localhost:4318/v1/metrics"
+        step: 15s
+
+  tracing:
+    sampling:
+      probability: 1.0

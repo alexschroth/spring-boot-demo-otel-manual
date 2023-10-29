@@ -1,0 +1,56 @@
+version: "3"
+
+services:
+  grafana:
+    image: grafana/grafana-oss
+    volumes:
+      - ./docker/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yaml
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_USERS_DEFAULT_THEME=system
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - loki
+      - tempo
+      - prometheus
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib
+    volumes:
+      - ./docker/otel-collector/config.yml:/etc/otelcol-contrib/config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock # only needed for "resourcedetection/docker"
+    ports:
+      - "127.0.0.1:4318:4318" # OTLP HTTP receiver
+      # - "127.0.0.1:4317:4317" # OTLP gRPC receiver
+    depends_on:
+      - loki
+      - tempo
+      - prometheus
+
+  prometheus:
+    image: prom/prometheus
+    restart: always
+    command: --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "127.0.0.1:9090:9090"
+
+  loki:
+    image: grafana/loki
+    command: -config.file=/etc/loki/config.yml
+    volumes:
+      - ./docker/loki/config.yml:/etc/loki/config.yml
+    ports:
+      - "127.0.0.1:3100:3100"
+
+  tempo:
+    image: grafana/tempo
+    command: -config.file=/etc/tempo.yml
+    volumes:
+      - ./docker/tempo/tempo.yml:/etc/tempo.yml
+    ports:
+      - "127.0.0.1:3200:3200"

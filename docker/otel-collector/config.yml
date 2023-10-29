@@ -1,0 +1,49 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+      # grpc:
+
+processors:
+  # optional
+  # https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/batchprocessor/README.md
+  batch:
+    timeout: 1s
+
+  # optional, adds attributes host.name and os.type
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/resourcedetectionprocessor/README.md
+  resourcedetection/docker:
+    detectors: [ docker ]
+
+exporters:
+  # if added to exporters, prints details to stdout
+  debug:
+    verbosity: detailed
+
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+
+  loki:
+    endpoint: "http://loki:3100/loki/api/v1/push"
+
+  otlp:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    metrics:
+      receivers: [ otlp ]
+      processors: [ batch ]
+      exporters: [ prometheus ]
+
+    traces:
+      receivers: [ otlp ]
+      processors: [ batch ]
+      exporters: [ otlp ]
+
+    logs:
+      receivers: [ otlp ]
+      processors: [ batch, resourcedetection/docker ]
+      exporters: [ loki ]
